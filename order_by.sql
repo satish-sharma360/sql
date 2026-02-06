@@ -1,6 +1,5 @@
 -- =====================================================
 -- SQL ORDER BY (SORTING) WITH OUTPUT & EXPLANATION
--- COPY-PASTE FRIENDLY VERSION
 -- =====================================================
 
 
