@@ -1,7 +1,6 @@
 -- =====================================================
--- SQL ORDER BY / SORTING TUTORIAL
--- Demonstrates basic to advanced sorting techniques
--- Using ONLY single-line comments for easy copy-paste
+-- SQL ORDER BY (SORTING) WITH OUTPUT & EXPLANATION
+-- COPY-PASTE FRIENDLY VERSION
 -- =====================================================
 
 
@@ -9,23 +8,18 @@
 -- SECTION 1: DATABASE & TABLE SETUP
 -- =====================================================
 
--- Create database
 CREATE DATABASE db12;
-
--- Select database
 USE db12;
 
--- Create products table
 CREATE TABLE products (
-    product_id INT PRIMARY KEY,        -- Unique product ID
-    product_name VARCHAR(100),          -- Name of product
-    category VARCHAR(50),               -- Product category
-    price DECIMAL(10,2),                -- Product price
-    stock_quantity INT,                 -- Available stock
-    last_updated TIMESTAMP              -- Last updated time
+    product_id INT PRIMARY KEY,
+    product_name VARCHAR(100),
+    category VARCHAR(50),
+    price DECIMAL(10,2),
+    stock_quantity INT,
+    last_updated TIMESTAMP
 );
 
--- Insert initial sample records
 INSERT INTO products VALUES
 (1, 'Laptop Pro', 'Electronics', 1299.99, 50, '2024-01-15 10:00:00'),
 (2, 'Desk Chair', 'Furniture', 199.99, 30, '2024-01-16 11:30:00'),
@@ -35,148 +29,237 @@ INSERT INTO products VALUES
 
 
 -- =====================================================
--- SECTION 2: BASIC SORTING OPERATIONS
+-- SECTION 2: BASIC ORDER BY
 -- =====================================================
 
--- Fetch all records (no sorting applied)
 SELECT * FROM products;
 
--- Sort products by price in ascending order (ASC is default)
-SELECT * FROM products 
+-- OUTPUT:
+-- Records appear in insertion order
+-- WHY:
+-- Without ORDER BY, SQL does NOT guarantee sorting
+
+
+SELECT * FROM products ORDER BY price;
+
+-- OUTPUT (price ASC):
+-- Gaming Mouse   59.99
+-- Coffee Maker  79.99
+-- Bookshelf     149.99
+-- Desk Chair    199.99
+-- Laptop Pro    1299.99
+-- WHY:
+-- Default ORDER BY sorting is ASC (small to large)
+
+
+SELECT * FROM products ORDER BY last_updated;
+
+-- OUTPUT (oldest first):
+-- Bookshelf
+-- Coffee Maker
+-- Laptop Pro
+-- Desk Chair
+-- Gaming Mouse
+-- WHY:
+-- Timestamp sorted chronologically
+
+
+-- =====================================================
+-- SECTION 3: MULTI-COLUMN SORTING
+-- =====================================================
+
+SELECT * FROM products ORDER BY category DESC, price DESC;
+
+-- OUTPUT ORDER:
+-- Furniture    -> Desk Chair, Bookshelf
+-- Electronics  -> Laptop Pro, Gaming Mouse
+-- Appliances   -> Coffee Maker
+-- WHY:
+-- First sorted by category (Z-A)
+-- Then price (high to low) inside same category
+
+
+SELECT * FROM products ORDER BY 4;
+
+-- OUTPUT:
+-- Same as ORDER BY price
+-- WHY:
+-- Column 4 = price
+-- NOTE:
+-- Works but bad practice (column order change breaks query)
+
+
+-- =====================================================
+-- SECTION 4: WHERE + ORDER BY
+-- =====================================================
+
+SELECT * FROM products
+WHERE category = 'Electronics'
 ORDER BY price;
 
--- Sort products by last updated timestamp (oldest to newest)
-SELECT * FROM products 
-ORDER BY last_updated;
+-- OUTPUT:
+-- Gaming Mouse 59.99
+-- Laptop Pro 1299.99
+-- WHY:
+-- WHERE filters rows first
+-- ORDER BY sorts filtered result
 
 
 -- =====================================================
--- SECTION 3: ADVANCED SORTING TECHNIQUES
+-- SECTION 5: FUNCTION-BASED SORTING
 -- =====================================================
 
--- Sort by category in descending order
--- If category is same, sort by price in descending order
-SELECT * FROM products 
-ORDER BY category DESC, price DESC;
+SELECT * FROM products ORDER BY LENGTH(product_name);
 
--- Sort using column position
--- Here, 4 refers to the "price" column
-SELECT * FROM products 
-ORDER BY 4;
+-- OUTPUT (short name first):
+-- Bookshelf
+-- Desk Chair
+-- Laptop Pro
+-- Gaming Mouse
+-- Coffee Maker
+-- WHY:
+-- LENGTH() returns character count
+-- Sorting happens on calculated value
 
--- Use WHERE clause with ORDER BY
--- First filter Electronics, then sort by price
-SELECT * FROM products 
-WHERE category = 'Electronics' 
-ORDER BY price;
 
--- Case-sensitive sorting using BINARY
--- Uppercase and lowercase values are treated differently
-SELECT * FROM products 
-ORDER BY BINARY category;
+SELECT * FROM products ORDER BY DAY(last_updated);
+
+-- OUTPUT:
+-- Bookshelf (13)
+-- Coffee Maker (14)
+-- Laptop Pro (15)
+-- Desk Chair (16)
+-- Gaming Mouse (17)
+-- WHY:
+-- DAY() extracts day number from date
 
 
 -- =====================================================
--- SECTION 4: FUNCTION-BASED SORTING
+-- SECTION 6: ORDER BY + LIMIT
 -- =====================================================
 
--- Sort products based on length of product name
-SELECT * FROM products 
-ORDER BY LENGTH(product_name);
-
--- Sort products based on day extracted from timestamp
-SELECT * FROM products 
-ORDER BY DAY(last_updated);
-
--- Get product with highest stock quantity
-SELECT * FROM products 
-ORDER BY stock_quantity DESC 
+SELECT * FROM products
+ORDER BY stock_quantity DESC
 LIMIT 1;
 
-
--- =====================================================
--- SECTION 5: CUSTOM SORTING ORDER
--- =====================================================
-
--- Default alphabetical sorting of categories
-SELECT * FROM products 
-ORDER BY category;
-
--- Custom sorting order using FIELD function
--- Electronics first, then Appliances, then Furniture
--- Price sorted in descending order within category
-SELECT * FROM products 
-ORDER BY FIELD(category, 'Electronics', 'Appliances', 'Furniture'), price DESC;
+-- OUTPUT:
+-- Gaming Mouse (200)
+-- WHY:
+-- DESC puts highest stock first
+-- LIMIT 1 returns top row only
 
 
 -- =====================================================
--- SECTION 6: CONDITIONAL / PRIORITY SORTING
+-- SECTION 7: CUSTOM SORT USING FIELD
 -- =====================================================
 
--- Create a priority flag for:
--- Low stock (<=50) AND high price (>=200)
+SELECT * FROM products
+ORDER BY FIELD(category,'Electronics','Appliances','Furniture'), price DESC;
+
+-- OUTPUT ORDER:
+-- Electronics first
+-- Appliances second
+-- Furniture last
+-- WHY:
+-- FIELD() assigns ranking numbers
+-- Sorting follows those numbers
+
+
+-- =====================================================
+-- SECTION 8: CONDITIONAL SORTING
+-- =====================================================
+
 SELECT *,
     stock_quantity <= 50 AND price >= 200 AS priority_flag
-FROM products 
+FROM products
 ORDER BY priority_flag DESC;
 
--- Advanced priority sorting using CASE expression
--- Priority 1: Low stock & high price
--- Priority 2: Low stock only
--- Priority 3: All others
+-- OUTPUT:
+-- Laptop Pro (priority_flag = 1)
+-- Others (priority_flag = 0)
+-- WHY:
+-- Boolean condition returns 1 (true) or 0 (false)
+-- DESC brings true values first
+
+
 SELECT *,
     CASE
         WHEN stock_quantity <= 50 AND price >= 200 THEN 1
         WHEN stock_quantity <= 50 THEN 2
         ELSE 3
     END AS priority
-FROM products 
+FROM products
 ORDER BY priority;
 
+-- OUTPUT ORDER:
+-- Priority 1 -> Laptop Pro
+-- Priority 2 -> Desk Chair, Bookshelf
+-- Priority 3 -> Others
+-- WHY:
+-- CASE creates custom numeric priority
+-- ORDER BY sorts by priority number
+
 
 -- =====================================================
--- SECTION 7: HANDLING NULL VALUES
+-- SECTION 9: NULL SORTING
 -- =====================================================
 
--- Insert records with NULL values
 INSERT INTO products VALUES
 (6, 'Desk Lamp', 'Furniture', NULL, 45, '2024-01-18 13:25:00'),
 (7, 'Keyboard', 'Electronics', 89.99, NULL, '2024-01-19 15:10:00');
 
--- Sorting by price (NULLs appear first by default in MySQL)
-SELECT * FROM products 
-ORDER BY price;
 
--- Explicitly push NULL prices to bottom
-SELECT *,
-    price IS NULL AS is_price_null
-FROM products 
+SELECT * FROM products ORDER BY price;
+
+-- OUTPUT:
+-- Desk Lamp (NULL price appears first)
+-- WHY:
+-- MySQL treats NULL as lowest value
+
+
+SELECT * FROM products
 ORDER BY price IS NULL, price;
 
+-- OUTPUT:
+-- Non-NULL prices first
+-- NULL prices at bottom
+-- WHY:
+-- price IS NULL returns 0 or 1
+-- 0 sorted before 1
+
 
 -- =====================================================
--- SECTION 8: SORTING USING CALCULATED COLUMNS
+-- SECTION 10: CALCULATED COLUMN SORT
 -- =====================================================
 
--- Calculate total inventory value (price * quantity)
--- Sort by highest total value
 SELECT *,
     price * stock_quantity AS total_value
-FROM products 
+FROM products
 ORDER BY total_value DESC;
 
+-- OUTPUT (top rows):
+-- Laptop Pro (highest total value)
+-- Gaming Mouse
+-- WHY:
+-- total_value calculated per row
+-- ORDER BY uses calculated alias
+
 
 -- =====================================================
--- SECTION 9: QUERY PERFORMANCE ANALYSIS
+-- SECTION 11: PERFORMANCE CHECK
 -- =====================================================
 
--- Analyze execution plan for multi-column sorting
-EXPLAIN 
-SELECT * FROM products 
-ORDER BY category, price;
+EXPLAIN SELECT * FROM products ORDER BY category, price;
 
--- Analyze execution plan for primary key sorting
--- Faster because product_id is indexed
-EXPLAIN 
-SELECT * FROM products 
-ORDER BY product_id;
+-- OUTPUT:
+-- Extra: Using filesort
+-- WHY:
+-- Sorting on non-indexed columns
+
+
+EXPLAIN SELECT * FROM products ORDER BY product_id;
+
+-- OUTPUT:
+-- Faster execution
+-- WHY:
+-- product_id is PRIMARY KEY (indexed)
